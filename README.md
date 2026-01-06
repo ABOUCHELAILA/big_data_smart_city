@@ -71,6 +71,40 @@ Les services suivants démarrent :
 
 ---
 
+## 🚀 Lancement Automatique
+
+### Option 3 : Lancement terminal (Automatique)
+
+#### Linux/Mac
+```bash
+# Rendre le script exécutable
+chmod +x launch_pipeline.sh
+
+# Lancer le pipeline automatiquement
+./launch_pipeline.sh
+```
+
+#### Windows PowerShell
+```powershell
+# Lancer le pipeline automatiquement
+.\launch_pipeline.ps1
+```
+
+#### Que fait le lancement automatique ?
+1. **Vérifie Docker** : Démarre l'infrastructure si nécessaire
+2. **Attend l'initialisation** : 60 secondes pour tous les services
+3. **Lance le DAG** : Via API REST Airflow
+4. **Retourne l'ID** : Pour suivre l'exécution
+5. **Surveillance** : Liens vers Airflow UI et logs
+
+#### Avantages du lancement automatique
+- **Pas d'interface web** : Tout depuis le terminal
+- **Scriptable** : Intégrable dans d'autres automatisations
+- **Rapide** : Un seule commande pour tout lancer
+- **Monitoring** : ID d'exécution pour suivi
+
+---
+
 ## 🎯 Utilisation du Pipeline
 
 ### Option 1 : Via Airflow UI (Recommandé)
