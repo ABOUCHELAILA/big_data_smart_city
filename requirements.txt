@@ -1,0 +1,10 @@
+# Dépendances Python pour le pipeline Big Data (Python 3.8 compatible)
+# Kafka
+kafka-python==2.0.2
+
+# HDFS
+hdfs3==0.3.1
+
+# Utilitaires
+python-dateutil==2.8.2
+pytz==2023.3

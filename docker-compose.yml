@@ -1,0 +1,211 @@
+version: '3.8'
+
+services:
+  # Zookeeper
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.0
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+    volumes:
+      - zookeeper_data:/var/lib/zookeeper/data
+      - zookeeper_logs:/var/lib/zookeeper/log
+
+  # Kafka
+  kafka:
+    image: confluentinc/cp-kafka:7.4.0
+    container_name: kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+      - kafka_logs:/var/log/kafka
+
+  # Kafka UI
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    depends_on:
+      - kafka
+    ports:
+      - "8080:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+
+  # HDFS NameNode
+  namenode:
+    image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
+    container_name: namenode
+    ports:
+      - "9000:9000"
+      - "9870:9870"
+    volumes:
+      - hadoop_namenode:/hadoop/dfs/name
+      - ./kafka_consumer:/opt/kafka_consumer
+    environment:
+      - CLUSTER_NAME=test
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
+      - CORE_CONF_hadoop_http_staticuser_user=root
+      - HDFS_CONF_dfs_permissions_enabled=false
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9870"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # HDFS DataNode
+  datanode:
+    image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
+    container_name: datanode
+    depends_on:
+      - namenode
+    ports:
+      - "9864:9864"
+      - "9866:9866"
+    volumes:
+      - hadoop_datanode:/hadoop/dfs/data
+    environment:
+      - CLUSTER_NAME=test
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
+      - CORE_CONF_hadoop_http_staticuser_user=root
+      - HDFS_CONF_dfs_permissions_enabled=false
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9866"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # HDFS Processor - Conteneur dédié pour le traitement HDFS
+  hdfs-processor:
+    image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
+    container_name: hdfs-processor
+    depends_on:
+      - namenode
+      - kafka
+    volumes:
+      - ./kafka_consumer:/opt/kafka_consumer
+      - ./logs:/opt/logs
+    environment:
+      - CLUSTER_NAME=test
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
+      - CORE_CONF_hadoop_http_staticuser_user=root
+      - HDFS_CONF_dfs_permissions_enabled=false
+    command: >
+      bash -c "
+      pip install kafka-python==2.0.2 &&
+      tail -f /dev/null
+      "
+
+  # PostgreSQL pour Airflow
+  postgres:
+    image: postgres:13
+    container_name: postgres
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  # Airflow init
+  airflow-init:
+    image: apache/airflow:2.7.3
+    container_name: airflow-init
+    depends_on:
+      - postgres
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql://airflow:airflow@postgres:5432/airflow
+      AIRFLOW__CORE__FERNET_KEY: E9bn2LtyP9anTFp1cIBOmGmp2N1YmZ4T5fNiAASEdGY=
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "false"
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      _AIRFLOW_DB_UPGRADE: "true"
+      _AIRFLOW_WWW_USER_CREATE: "true"
+      _AIRFLOW_WWW_USER_USERNAME: airflow
+      _AIRFLOW_WWW_USER_PASSWORD: airflow
+    volumes:
+      - ./airflow_dags:/opt/airflow/dags
+      - ./scripts:/opt/airflow/scripts
+      - ./data_generator:/opt/airflow/data_generator
+      - ./kafka_producer:/opt/airflow/kafka_producer
+      - ./kafka_consumer:/opt/airflow/kafka_consumer
+      - ./spark_processing:/opt/airflow/spark_processing
+      - ./analytics:/opt/airflow/analytics
+      - ./logs:/opt/airflow/logs
+    command: bash -c "pip install --user -r /requirements.txt && airflow db init"
+
+  # Airflow Webserver
+  airflow-webserver:
+    image: apache/airflow:2.7.3
+    container_name: airflow-webserver
+    depends_on:
+      - postgres
+      - airflow-init
+    ports:
+      - "8081:8080"
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql://airflow:airflow@postgres:5432/airflow
+      AIRFLOW__CORE__FERNET_KEY: E9bn2LtyP9anTFp1cIBOmGmp2N1YmZ4T5fNiAASEdGY=
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "false"
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+    volumes:
+      - ./airflow_dags:/opt/airflow/dags
+      - ./scripts:/opt/airflow/scripts
+      - ./data_generator:/opt/airflow/data_generator
+      - ./kafka_producer:/opt/airflow/kafka_producer
+      - ./kafka_consumer:/opt/airflow/kafka_consumer
+      - ./spark_processing:/opt/airflow/spark_processing
+      - ./analytics:/opt/airflow/analytics
+      - ./logs:/opt/airflow/logs
+    command: bash -c "pip install --user -r /requirements.txt && airflow webserver"
+
+  # Airflow Scheduler
+  airflow-scheduler:
+    image: apache/airflow:2.7.3
+    container_name: airflow-scheduler
+    depends_on:
+      - postgres
+      - airflow-init
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql://airflow:airflow@postgres:5432/airflow
+      AIRFLOW__CORE__FERNET_KEY: E9bn2LtyP9anTFp1cIBOmGmp2N1YmZ4T5fNiAASEdGY=
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "false"
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+    volumes:
+      - ./airflow_dags:/opt/airflow/dags
+      - ./scripts:/opt/airflow/scripts
+      - ./data_generator:/opt/airflow/data_generator
+      - ./kafka_producer:/opt/airflow/kafka_producer
+      - ./kafka_consumer:/opt/airflow/kafka_consumer
+      - ./spark_processing:/opt/airflow/spark_processing
+      - ./analytics:/opt/airflow/analytics
+      - ./logs:/opt/airflow/logs
+    command: bash -c "pip install --user -r /requirements.txt && airflow scheduler"
+
+volumes:
+  zookeeper_data:
+  zookeeper_logs:
+  kafka_data:
+  kafka_logs:
+  hadoop_namenode:
+  hadoop_datanode:
+  postgres_data:

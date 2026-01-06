@@ -1,0 +1,37 @@
+# Configuration du Pipeline Big Data - Trafic Urbain
+
+kafka:
+  bootstrap_servers: "localhost:9092"
+  topic: "traffic-events"
+  partition_count: 3
+  replication_factor: 1
+
+hdfs:
+  namenode: "hdfs://localhost:9000"
+  raw_path: "/data/raw/traffic"
+  processed_path: "/data/processed/traffic"
+  analytics_path: "/data/analytics/traffic"
+
+spark:
+  app_name: "TrafficProcessing"
+  master: "local[*]"
+  executor_memory: "2g"
+  driver_memory: "1g"
+
+data_generator:
+  sensors:
+    count: 50
+    zones: ["Centre-ville", "Périphérie", "Zone industrielle", "Quartier résidentiel", "Zone commerciale"]
+    road_types: ["autoroute", "avenue", "rue"]
+  generation:
+    events_per_second: 10
+    duration_minutes: 60
+
+grafana:
+  host: "localhost"
+  port: 3000
+  datasource: "InfluxDB"
+
+airflow:
+  dag_id: "traffic_pipeline"
+  schedule_interval: "@hourly"
