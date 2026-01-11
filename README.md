@@ -44,7 +44,7 @@ Le pipeline suit une architecture Lambda avec 7 étapes distinctes :
 ```
 [1. Génération] → [2. Kafka] → [3. HDFS Raw] → [4. Spark Processing] → [5. Parquet Analytics] → [6. Validation] → [7. Visualisation]
 ```
-
+![Architecture du projet](https://github.com/ABOUCHELAILA/big_data_smart_city/blob/master/captures/Untitled%20diagram-2026-01-11-193430.png)
 ### Stack Technologique
 
 | Composant | Technologie | Rôle |
@@ -2437,3 +2437,4 @@ L'architecture mise en place constitue une base solide pour l'évolution vers :
 Ce projet illustre parfaitement comment les technologies Big Data peuvent transformer la gestion des villes intelligentes, en fournissant des insights en temps réel pour une prise de décision éclairée.
 
 ---
+
