@@ -14,6 +14,7 @@ dist/
 # Données temporaires
 /tmp/
 *.json
+!grafana/**/*.json
 *.parquet
 *.csv
 

@@ -1,0 +1,36 @@
+{
+  "title": "Smart City - Tour de Contrôle Finale",
+  "panels": [
+    {
+      "title": "Trafic Moyen par Quartier",
+      "type": "barchart",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+      "datasource": "Traffic Data API",
+      "targets": [{"target": "zone_metrics"}]
+    },
+    {
+      "title": "Taux de Congestion Global",
+      "type": "gauge",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+      "datasource": "Traffic Data API",
+      "targets": [{"target": "congestion"}],
+      "fieldConfig": {"defaults": {"unit": "percent", "thresholds": {"steps": [{"color": "green", "value": null}, {"color": "red", "value": 70}]}}}
+    },
+    {
+      "title": "Vitesse par Type de Route",
+      "type": "piechart",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+      "datasource": "Traffic Data API",
+      "targets": [{"target": "road_metrics"}]
+    },
+    {
+      "title": "Patterns Horaires (Heures de Pointe)",
+      "type": "state-timeline",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+      "datasource": "Traffic Data API",
+      "targets": [{"target": "hourly_patterns"}]
+    }
+  ],
+  "schemaVersion": 36,
+  "version": 1
+}
