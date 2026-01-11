@@ -164,11 +164,12 @@ BIG_DATA_SMART_CITY/
 ├── kafka_producer/              # Étape 2 : Ingestion
 │   ├── __init__.py
 │   ├── kafka_producer_simple.py
-│   └── kafka_consumer_simple.py
+│   
 │
 ├── kafka_consumer/              # Étape 3 : Stockage Raw
 │   ├── __init__.py
 │   └── kafka_consumer_hdfs_rest.py
+    └── kafka_consumer_simple.py
 │
 ├── spark_processing/            # Étape 4 : Traitement
 │   ├── __init__.py
@@ -181,7 +182,7 @@ BIG_DATA_SMART_CITY/
 ├── scripts/                     # Étape 6 : Validation
 │   ├── __init__.py
 │   ├── validate_data_quality.py
-│   └── test_pipeline.sh
+│   
 │
 ├── api/                         # Étape 7 : API REST
 │   └── data_api.py
@@ -2437,4 +2438,5 @@ L'architecture mise en place constitue une base solide pour l'évolution vers :
 Ce projet illustre parfaitement comment les technologies Big Data peuvent transformer la gestion des villes intelligentes, en fournissant des insights en temps réel pour une prise de décision éclairée.
 
 ---
+
 
